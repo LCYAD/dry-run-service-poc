@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1732101179172,
+      "tag": "0000_glamorous_masque",
+      "breakpoints": true
+    }
+  ]
+}
