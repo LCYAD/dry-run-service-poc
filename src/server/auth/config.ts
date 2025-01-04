@@ -9,6 +9,7 @@ import {
   users,
   verificationTokens,
 } from "@/server/db/schema";
+import { env } from "@/env";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -38,7 +39,15 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    GoogleProvider,
+    GoogleProvider({
+      clientId: env.AUTH_GOOGLE_ID,
+      clientSecret: env.AUTH_GOOGLE_SECRET,
+      authorization: {
+        params: {
+          scope: "profile email", // These scopes are required
+        },
+      },
+    }),
     /**
      * ...add more providers here.
      *
@@ -63,5 +72,14 @@ export const authConfig = {
         id: user.id,
       },
     }),
+    // signIn: ({ user, account, profile }) => {
+    //   // TODO: limit account signIn based on
+    //   return true;
+    // },
+  },
+  theme: {
+    logo: "/nextAuth.svg",
+    buttonText: "#ffffff",
+    colorScheme: "auto",
   },
 } satisfies NextAuthConfig;
