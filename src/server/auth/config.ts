@@ -10,6 +10,7 @@ import {
   verificationTokens,
 } from "@/server/db/schema";
 import { env } from "@/env";
+import { authorizedUsers, type UserRole } from "authorizedUsers";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -22,7 +23,8 @@ declare module "next-auth" {
     user: {
       id: string;
       // ...other properties
-      // role: UserRole;
+      role: UserRole;
+      accessibleProjects: string[];
     } & DefaultSession["user"];
   }
 
@@ -65,17 +67,23 @@ export const authConfig = {
     verificationTokensTable: verificationTokens,
   }),
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
-    // signIn: ({ user, account, profile }) => {
-    //   // TODO: limit account signIn based on
-    //   return true;
-    // },
+    session: ({ session, user }) => {
+      const userAccessRight = authorizedUsers[user?.email];
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          ...userAccessRight,
+          id: user.id,
+        },
+      };
+    },
+    signIn: ({ profile }) => {
+      if (!profile?.email_verified) return false;
+      if (profile?.email)
+        return Object.keys(authorizedUsers).includes(profile?.email ?? "");
+      return true;
+    },
   },
   theme: {
     logo: "/nextAuth.svg",

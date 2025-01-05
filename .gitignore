@@ -47,3 +47,6 @@ yarn-error.log*
 
 # MySQL related data
 data/*
+
+# Custom Authorized List
+authorizedUsers.ts

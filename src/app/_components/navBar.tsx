@@ -10,10 +10,16 @@ type NavBarProps = {
   userSession: Session;
 };
 
+const pathNameMapping: Record<string, string> = {
+  "/": "Home",
+  "/error-monitoring": "Error Monitoring",
+  "/approvals": "Approvals",
+};
+
 export default function NavBar({ userSession }: NavBarProps) {
   const pathname = usePathname();
-  const navBarName = pathname === "/" ? "Error Monitor" : "";
-  console.log("userSession", userSession);
+  const navBarName = pathNameMapping[pathname] ?? "";
+
   return (
     <div className="navbar bg-base-100 py-4">
       <div className="navbar-start">
@@ -38,12 +44,16 @@ export default function NavBar({ userSession }: NavBarProps) {
             tabIndex={0}
             className="menu dropdown-content menu-lg z-[1] mt-3 w-52 rounded-box bg-base-100 p-2 shadow"
           >
-            <li>
-              <Link href="/">Error Monitor</Link>
-            </li>
-            <li>
-              <Link href="/">Approvals</Link>
-            </li>
+            {userSession.user.role !== "approver" && (
+              <li>
+                <Link href="/">Error Monitor</Link>
+              </li>
+            )}
+            {userSession.user.role !== "developer" && (
+              <li>
+                <Link href="/">Approvals</Link>
+              </li>
+            )}
           </ul>
         </div>
       </div>
@@ -60,7 +70,11 @@ export default function NavBar({ userSession }: NavBarProps) {
             <div className="w-10 rounded-full">
               <Image
                 alt="Tailwind CSS Navbar component"
-                src={userSession?.user?.image ?? "emptyAvatar.svg"}
+                src={
+                  userSession?.user?.image?.includes("googleusercontent.com")
+                    ? userSession.user.image
+                    : "emptyAvatar.svg"
+                }
                 width={50}
                 height={50}
               />
