@@ -19,8 +19,8 @@ export default async function AuthenticatedLayout({
 
   return (
     <HydrateClient>
-      <NavBar userSession={session} />
-      <div className="min-h-full min-w-full">{children}</div>
+      <NavBar session={session} />
+      <div className="min-h-[90vh]">{children}</div>
     </HydrateClient>
   );
 }
