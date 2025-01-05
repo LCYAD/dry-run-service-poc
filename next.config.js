@@ -10,10 +10,6 @@ const config = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "img.daisyui.com",
-      },
-      {
-        protocol: "https",
         hostname: "*.googleusercontent.com",
       },
     ],
