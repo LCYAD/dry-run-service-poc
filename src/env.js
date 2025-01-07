@@ -17,8 +17,11 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    REDIS_HOST: z.string().default("localhost"),
-    REDIS_PORT: z.string().transform((v) => (v ? parseInt(v) : 6379)),
+    REDIS_HOST: z.string().optional().default("localhost"),
+    REDIS_PORT: z
+      .string()
+      .optional()
+      .transform((v) => (v ? parseInt(v) : 6379)),
   },
 
   /**
