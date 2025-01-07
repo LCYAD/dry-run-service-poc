@@ -4,13 +4,13 @@ import { z } from "zod";
 import { testStringEqualQueue } from "@/server/bullmq/testStringEqual";
 import { nanoid } from "nanoid";
 
-const job = new Hono().basePath("/api/job");
+export const jobRouter = new Hono().basePath("/api/job");
 
 const jobTestStringPostInputSchema = z.object({
   expectedRes: z.string(),
 });
 
-job.post(
+jobRouter.post(
   "/test-string-equal",
   zValidator("json", jobTestStringPostInputSchema),
   async (c) => {
@@ -25,4 +25,6 @@ job.post(
   },
 );
 
-export const jobRouter = job;
+export type StringEqualQueueInput = z.infer<
+  typeof jobTestStringPostInputSchema
+>;
