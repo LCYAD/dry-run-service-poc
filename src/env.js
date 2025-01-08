@@ -17,11 +17,12 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    REDIS_HOST: z.string().optional().default("localhost"),
-    REDIS_PORT: z
-      .string()
-      .optional()
-      .transform((v) => (v ? parseInt(v) : 6379)),
+    REDIS_HOST: z.string().default("localhost"),
+    REDIS_PORT: z.string().transform((v) => (v ? parseInt(v) : 6379)),
+    S3_URL: z.string().url(),
+    S3_REGION: z.string(),
+    S3_ACCEESS_ID: z.string(),
+    S3_SECRET_KEY: z.string(),
   },
 
   /**
@@ -45,6 +46,10 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: process.env.REDIS_PORT,
+    S3_URL: process.env.S3_URL,
+    S3_REGION: process.env.S3_REGION,
+    S3_ACCEESS_ID: process.env.S3_ACCEESS_ID,
+    S3_SECRET_KEY: process.env.S3_SECRET_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
