@@ -1,6 +1,7 @@
 import { Queue, Worker, type Job } from "bullmq";
 import { connection } from "./ioredis";
 import type { StringEqualQueueInput } from "../api/honoRouters/job";
+import { errorHandlingQueue } from "./errorHandler";
 
 const queueName = "test-string-equal";
 
@@ -21,10 +22,7 @@ new Worker(
     const returnedStr = await res.text();
     const expectedRes = job.data.expectedRes;
     if (returnedStr !== expectedRes) {
-      // TODO:  Handle the case when strings are not equal
-      console.log(
-        `Job ${job.name}: new implementation output ${returnedStr} does not match expectedRes of ${expectedRes}`,
-      );
+      await errorHandlingQueue.add(job.name, { ...job.data });
     }
     return true;
   },
