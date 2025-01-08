@@ -22,7 +22,11 @@ new Worker(
     const returnedStr = await res.text();
     const expectedRes = job.data.expectedRes;
     if (returnedStr !== expectedRes) {
-      await errorHandlingQueue.add(job.name, { ...job.data });
+      await errorHandlingQueue.add(queueName, {
+        ...job.data,
+        actualRes: returnedStr,
+        failedJobId: job.name,
+      });
     }
     return true;
   },
