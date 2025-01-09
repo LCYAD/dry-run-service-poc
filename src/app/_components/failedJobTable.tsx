@@ -1,6 +1,6 @@
 import Divider from "./divider";
 
-export default function ErrorTable() {
+export default function FailedJobTable() {
   // TODO: will update implementation, still thinking
   return (
     <div className="m-[10%] h-[40%] w-full">
