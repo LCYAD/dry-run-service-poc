@@ -1,6 +1,7 @@
 import { Queue, Worker, type Job } from "bullmq";
 import { connection } from "./ioredis";
-import { uploadJsonToS3 } from "../s3/s3";
+import { encryptAndUploadJsonToS3 } from "../util/s3";
+import { generateKeyPair } from "../util/genSecret";
 
 const queueName = "error-handling";
 
@@ -22,10 +23,12 @@ new Worker(
     console.log(
       `Handling error ${job.name}: with payload: ${JSON.stringify(job.data)}`,
     );
-    await uploadJsonToS3(
-      `error-handling/${job.name}/${job.data.failedJobId}.json`,
-      job.data,
-    );
+    const { publicKey } = generateKeyPair(2048);
+
+    const key = `error-handling/${job.name}/${job.data.failedJobId}.json`;
+
+    await encryptAndUploadJsonToS3(key, job.data, publicKey);
+
     // TODO: create entry to DB
     return true;
   },
