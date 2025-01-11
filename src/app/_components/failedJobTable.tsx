@@ -1,7 +1,12 @@
+"use client";
+
+import { api } from "@/trpc/react";
 import Divider from "./divider";
+import DeleteBtn from "./deleteBtn";
 
 export default function FailedJobTable() {
-  // TODO: will update implementation, still thinking
+  const { data: failedJobs = [] } = api.failedJob.getFailJobs.useQuery();
+
   return (
     <div className="m-[10%] h-[40%] w-full">
       <p className="text-2xl font-semibold">Error Monitor</p>
@@ -10,27 +15,29 @@ export default function FailedJobTable() {
         <table className="table table-zebra w-[80%] border-2 border-gray-400">
           <thead>
             <tr>
-              <th className="text-base">Name</th>
-              <th className="text-base">Job</th>
-              <th className="text-base">Favorite Color</th>
+              <th className="text-base">Job ID</th>
+              <th className="text-base">Approved</th>
+              <th className="text-base">Created At</th>
+              <th className="text-base">Last Updated</th>
+              <th className="text-base">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Cy Ganderton</td>
-              <td>Quality Control Specialist</td>
-              <td>Blue</td>
-            </tr>
-            <tr>
-              <td>Hart Hagerty</td>
-              <td>Desktop Support Technician</td>
-              <td>Purple</td>
-            </tr>
-            <tr>
-              <td>Brice Swyre</td>
-              <td>Tax Accountant</td>
-              <td>Red</td>
-            </tr>
+            {failedJobs.map((job) => (
+              <tr key={job.id}>
+                <td>{job.jobId}</td>
+                <td>{job.downloadApproved ? "Yes" : "No"}</td>
+                <td>{new Date(job.createdAt).toLocaleString()}</td>
+                <td>
+                  {job.updatedAt
+                    ? new Date(job.updatedAt).toLocaleString()
+                    : new Date(job.createdAt).toLocaleString()}
+                </td>
+                <td>
+                  <DeleteBtn id={job.id} />
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
