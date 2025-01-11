@@ -3,8 +3,8 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import type { Readable } from "stream";
 import crypto from "crypto";
 
 const s3Client = new S3Client({
@@ -76,6 +76,26 @@ export const downloadAndDecryptFromS3 = async (
     return {
       success: true,
       data: JSON.parse(decryptedData.toString()) as Record<string, unknown>,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+export const deleteS3Object = async (key: string) => {
+  const command = new DeleteObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  });
+
+  try {
+    const response = await s3Client.send(command);
+    return {
+      success: true,
+      response,
     };
   } catch (error) {
     return {
