@@ -2,8 +2,9 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { failedJobs } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { deleteS3Object } from "@/server/util/s3";
+import { authorizedUsers } from "authorizedUsers";
 
 export const failedJobRouter = createTRPCRouter({
   getFailJobs: protectedProcedure.query(async ({ ctx }) => {
@@ -14,7 +15,18 @@ export const failedJobRouter = createTRPCRouter({
         message: "User email is not found in user session",
       });
     }
-    const jobs = await ctx.db.select().from(failedJobs);
+    const userAccessibleJobs = authorizedUsers[userEmail]?.accessibleJobs ?? [];
+    const jobs = await ctx.db
+      .select({
+        id: failedJobs.id,
+        jobId: failedJobs.jobId,
+        jobName: failedJobs.jobName,
+        downloadApproved: failedJobs.downloadApproved,
+        createdAt: failedJobs.createdAt,
+        updatedAt: failedJobs.updatedAt,
+      })
+      .from(failedJobs)
+      .where(inArray(failedJobs.jobName, userAccessibleJobs));
     return jobs;
   }),
   deleteJob: protectedProcedure

@@ -1,0 +1,1 @@
+ALTER TABLE `failed_job` ADD `job_name` varchar(255) NOT NULL AFTER `job_id`;
