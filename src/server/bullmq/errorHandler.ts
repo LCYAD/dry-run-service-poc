@@ -16,23 +16,21 @@ type ErrorHandlingInput = {
   input?: unknown;
   expectedRes: string | Record<string, unknown>;
   actualRes: string | Record<string, unknown>;
+  jobName: string;
 };
 
 // directly setting up the worker inside the queue
 new Worker(
   queueName,
   async (job: Job<ErrorHandlingInput, boolean>) => {
-    console.log(
-      `Handling error ${job.name}: with payload: ${JSON.stringify(job.data)}`,
-    );
     const { publicKey } = generateKeyPair(2048);
-
-    const s3Key = `error-handling/${job.name}/${job.data.failedJobId}.json`;
+    const s3Key = `error-handling/${job.data.jobName}/${job.data.failedJobId}.json`;
 
     await encryptAndUploadJsonToS3(s3Key, job.data, publicKey);
 
     await db.insert(failedJobs).values({
       jobId: job.data.failedJobId,
+      jobName: job.data.jobName,
       s3Key,
     });
 

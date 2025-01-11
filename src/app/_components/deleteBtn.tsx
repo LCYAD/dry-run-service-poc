@@ -19,7 +19,7 @@ export default function DeleteBtn({ id }: Props) {
       onClick={async () => {
         await deleteFailJob.mutate({ id });
       }}
-      className="btn"
+      className="btn mx-1"
     >
       <Image src="trashCan.svg" width={30} height={30} alt="delete" />
     </button>

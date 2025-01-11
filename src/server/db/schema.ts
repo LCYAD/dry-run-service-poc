@@ -109,6 +109,7 @@ export const failedJobs = createTable(
   {
     id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
     jobId: varchar("job_id", { length: 255 }).notNull(),
+    jobName: varchar("job_name", { length: 255 }).notNull(),
     s3Key: varchar("s3_key", { length: 255 }).notNull(),
     downloadApproved: boolean("download_approved").default(false),
     createdAt: timestamp("created_at")
@@ -120,3 +121,37 @@ export const failedJobs = createTable(
     jobIdIdx: index("job_id_idx").on(fj.jobId),
   }),
 );
+
+export const approvals = createTable(
+  "approval",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    jobId: bigint("job_id", { mode: "number" })
+      .notNull()
+      .references(() => failedJobs.id),
+    userEmail: varchar("user_email", { length: 255 }).notNull(),
+    status: varchar("status", { length: 255 })
+      .notNull()
+      .$type<"pending" | "approved" | "rejected">(),
+    createdAt: timestamp("created_at")
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp("updated_at").onUpdateNow(),
+  },
+  (approval) => ({
+    jobIdIdx: index("approval_job_id_idx").on(approval.jobId),
+    userEmailIdx: index("approval_user_email_idx").on(approval.userEmail),
+  }),
+);
+
+// Add this relation to connect approvals with failedJobs
+export const failedJobsRelations = relations(failedJobs, ({ many }) => ({
+  approvals: many(approvals),
+}));
+
+export const approvalsRelations = relations(approvals, ({ one }) => ({
+  failedJob: one(failedJobs, {
+    fields: [approvals.jobId],
+    references: [failedJobs.id],
+  }),
+}));
