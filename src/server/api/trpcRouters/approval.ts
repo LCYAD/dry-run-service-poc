@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
-import { approvals } from "@/server/db/schema";
+import { approvals, failedJobs } from "@/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { authorizedUsers } from "authorizedUsers";
 
 export const approvalRouter = createTRPCRouter({
-  getApprovals: protectedProcedure.query(async ({ ctx }) => {
+  getAll: protectedProcedure.query(async ({ ctx }) => {
     const userEmail = ctx.session?.user?.email ?? "";
     if (!userEmail) {
       throw new TRPCError({
@@ -18,10 +18,28 @@ export const approvalRouter = createTRPCRouter({
     const userRole = authorizedUsers[userEmail]?.role;
     const result = await (userRole === "developer"
       ? ctx.db
-          .select()
+          .select({
+            id: approvals.id,
+            jobId: failedJobs.jobId,
+            userEmail: approvals.userEmail,
+            status: approvals.status,
+            createdAt: approvals.createdAt,
+            updatedAt: approvals.updatedAt,
+          })
           .from(approvals)
+          .leftJoin(failedJobs, eq(approvals.jobId, failedJobs.id))
           .where(eq(approvals.userEmail, userEmail))
-      : ctx.db.select().from(approvals));
+      : ctx.db
+          .select({
+            id: approvals.id,
+            jobId: failedJobs.jobId,
+            userEmail: approvals.userEmail,
+            status: approvals.status,
+            createdAt: approvals.createdAt,
+            updatedAt: approvals.updatedAt,
+          })
+          .from(approvals)
+          .leftJoin(failedJobs, eq(approvals.jobId, failedJobs.id)));
     return result;
   }),
   create: protectedProcedure
@@ -32,5 +50,20 @@ export const approvalRouter = createTRPCRouter({
         userEmail: ctx.session.user.email as string,
         status: "pending",
       });
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const approval = await ctx.db
+        .select()
+        .from(approvals)
+        .where(eq(approvals.id, input.id));
+      if (approval.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "could not find failedJob by Id",
+        });
+      }
+      await ctx.db.delete(approvals).where(eq(approvals.id, input.id));
     }),
 });
