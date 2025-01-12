@@ -29,6 +29,7 @@ export default function ApprovalTable({ userRole }: Props) {
     onSuccess: () => {
       utils.failedJob.getAll.invalidate();
       utils.approval.getAll.invalidate();
+      utils.auditLog.getAll.invalidate();
     },
   });
 

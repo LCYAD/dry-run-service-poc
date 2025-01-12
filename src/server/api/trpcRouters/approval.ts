@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
-import { approvals, failedJobs } from "@/server/db/schema";
+import { approvals, auditLogs, failedJobs } from "@/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { eq, and } from "drizzle-orm";
 import { authorizedUsers } from "authorizedUsers";
 
 export const approvalRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
+  getAll: protectedProcedure.query(({ ctx }) => {
     const userEmail = ctx.session?.user?.email ?? "";
     if (!userEmail) {
       throw new TRPCError({
@@ -16,7 +16,7 @@ export const approvalRouter = createTRPCRouter({
       });
     }
     const userRole = authorizedUsers[userEmail]?.role;
-    const result = await (userRole === "developer"
+    return userRole === "developer"
       ? ctx.db
           .select({
             id: approvals.id,
@@ -39,8 +39,7 @@ export const approvalRouter = createTRPCRouter({
             updatedAt: approvals.updatedAt,
           })
           .from(approvals)
-          .leftJoin(failedJobs, eq(approvals.jobId, failedJobs.id)));
-    return result;
+          .leftJoin(failedJobs, eq(approvals.jobId, failedJobs.id));
   }),
   create: protectedProcedure
     .input(z.object({ jobId: z.number() }))
@@ -60,28 +59,37 @@ export const approvalRouter = createTRPCRouter({
           message: "there is another pending approval for this jobId",
         });
       }
-      await ctx.db.insert(approvals).values({
-        jobId: input.jobId,
-        userEmail: ctx.session.user.email as string,
-        status: "pending",
-      });
+      const userEmail = ctx.session.user.email!;
+      await Promise.all([
+        ctx.db.insert(approvals).values({
+          jobId: input.jobId,
+          userEmail: userEmail,
+          status: "pending",
+        }),
+        ctx.db.insert(auditLogs).values({
+          jobId: input.jobId,
+          event: "Approval Requested",
+          performedBy: userEmail,
+        }),
+      ]);
     }),
   updateStatus: protectedProcedure
     .input(
       z.object({ id: z.number(), status: z.enum(["approved", "rejected"]) }),
     )
     .mutation(async ({ ctx, input }) => {
-      const approval = await ctx.db
+      const results = await ctx.db
         .select()
         .from(approvals)
         .where(eq(approvals.id, input.id));
-      if (approval.length === 0) {
+      if (results.length === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "could not find failedJob by Id",
         });
       }
-      if (approval[0]?.status !== "pending") {
+      const approval = results[0]!;
+      if (approval.status !== "pending") {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "status could not be updated",
@@ -93,7 +101,7 @@ export const approvalRouter = createTRPCRouter({
               ctx.db
                 .update(failedJobs)
                 .set({ downloadApproved: true })
-                .where(eq(failedJobs.id, approval[0].jobId)),
+                .where(eq(failedJobs.id, approval.jobId)),
             ]
           : [];
       await Promise.all([
@@ -102,6 +110,14 @@ export const approvalRouter = createTRPCRouter({
           .update(approvals)
           .set({ status: input.status })
           .where(eq(approvals.id, input.id)),
+        ctx.db.insert(auditLogs).values({
+          jobId: approval.jobId,
+          event:
+            input.status === "approved"
+              ? "Request approved"
+              : "Request rejected",
+          performedBy: ctx.session.user.email!,
+        }),
       ]);
     }),
   delete: protectedProcedure

@@ -49,7 +49,9 @@ export default function NavBar({ session }: Props) {
               className="menu dropdown-content menu-lg z-[1] mt-3 w-52 rounded-box bg-base-100 p-2 shadow"
             >
               <li>
-                <Link href="/">Audit Logs</Link>
+                <Link href={pathname === "/audit-log" ? "/" : "/audit-log"}>
+                  {pathname === "/audit-log" ? "Dashboard" : "Audit Logs"}
+                </Link>
               </li>
             </ul>
           </div>

@@ -25,6 +25,7 @@ export default function FailedJobTable() {
     // TODO: handle error case
     onSuccess: () => {
       utils.approval.getAll.invalidate();
+      utils.auditLog.getAll.invalidate();
     },
   });
 
@@ -70,6 +71,7 @@ export default function FailedJobTable() {
                     <RequestApprovalBtn
                       clickHandler={createApprovalHandler(job.id)}
                       text="Request Approval"
+                      disabled={job.downloadApproved!}
                     />
                   </div>
                 </td>

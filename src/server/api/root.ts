@@ -1,7 +1,7 @@
-import { postRouter } from "@/server/api/trpcRouters/post";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { failedJobRouter } from "./trpcRouters/failedJob";
 import { approvalRouter } from "./trpcRouters/approval";
+import { auditLogRouter } from "./trpcRouters/auditLog";
 
 /**
  * This is the primary router for your server.
@@ -9,9 +9,9 @@ import { approvalRouter } from "./trpcRouters/approval";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  post: postRouter,
   failedJob: failedJobRouter,
   approval: approvalRouter,
+  auditLog: auditLogRouter,
 });
 
 // export type definition of API

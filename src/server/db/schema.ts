@@ -155,3 +155,21 @@ export const approvalsRelations = relations(approvals, ({ one }) => ({
     references: [failedJobs.id],
   }),
 }));
+
+export const auditLogs = createTable(
+  "audit_log",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    jobId: bigint("job_id", { mode: "number" }).notNull(),
+    event: varchar("event", { length: 255 }).notNull(),
+    performedBy: varchar("performed_by", { length: 255 }).notNull(),
+    createdAt: timestamp("created_at")
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp("updated_at").onUpdateNow(),
+  },
+  (al) => ({
+    jobIdIdx: index("audit_log_job_id_idx").on(al.jobId),
+    performedByIdx: index("audit_log_performed_by_idx").on(al.performedBy),
+  }),
+);
