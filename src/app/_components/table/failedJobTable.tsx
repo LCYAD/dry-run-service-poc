@@ -3,7 +3,7 @@
 import { api } from "@/trpc/react";
 import DeleteBtn from "./deleteBtn";
 import TableContainer from "./tableContainer";
-import RequestApprovalBtn from "./requestApprovalBtn";
+import RequestApprovalBtn from "./customBtn";
 import TableHeader from "./tableHeader";
 
 export default function FailedJobTable() {
@@ -12,7 +12,6 @@ export default function FailedJobTable() {
   const utils = api.useUtils();
   const deleteFailJob = api.failedJob.delete.useMutation({
     onSuccess: () => {
-      // TODO: invalidate only the ones being deleted
       utils.failedJob.getAll.invalidate();
       utils.approval.getAll.invalidate();
     },
@@ -22,13 +21,24 @@ export default function FailedJobTable() {
     deleteFailJob.mutate({ id });
   };
 
+  const createApproval = api.approval.create.useMutation({
+    // TODO: handle error case
+    onSuccess: () => {
+      utils.approval.getAll.invalidate();
+    },
+  });
+
+  const createApprovalHandler = (jobId: number) => () => {
+    createApproval.mutate({ jobId });
+  };
+
   const tableHeaders = [
-    "Job Name",
-    "Job ID",
-    "Approved",
-    "Created At",
-    "Last Updated",
-    "Action",
+    { name: "Job Name", widthPercentageStr: "20%" },
+    { name: "Job ID", widthPercentageStr: "20%" },
+    { name: "Approved", widthPercentageStr: "10%" },
+    { name: "Created At", widthPercentageStr: "15%" },
+    { name: "Last Updated", widthPercentageStr: "15%" },
+    { name: "Action", widthPercentageStr: "20%" },
   ];
 
   return (
@@ -57,7 +67,10 @@ export default function FailedJobTable() {
                 <td>
                   <div className="flex w-full">
                     <DeleteBtn clickHandler={deletFailJobHandler(job.id)} />
-                    <RequestApprovalBtn jobId={job.id} />
+                    <RequestApprovalBtn
+                      clickHandler={createApprovalHandler(job.id)}
+                      text="Request Approval"
+                    />
                   </div>
                 </td>
               </tr>

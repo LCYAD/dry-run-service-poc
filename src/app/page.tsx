@@ -1,7 +1,7 @@
 import { auth } from "@/server/auth";
-import ApprovalTable from "./_components/approvalTable";
+import ApprovalTable from "./_components/table/approvalTable";
 import AuthenticatedLayout from "./_components/authenticatedLayout";
-import FailedJobTable from "./_components/failedJobTable";
+import FailedJobTable from "./_components/table/failedJobTable";
 
 export default async function Home() {
   const session = await auth();
@@ -9,7 +9,7 @@ export default async function Home() {
   return (
     <AuthenticatedLayout>
       {userRole !== "approver" && <FailedJobTable />}
-      <ApprovalTable />
+      <ApprovalTable userRole={userRole} />
     </AuthenticatedLayout>
   );
 }
