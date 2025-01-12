@@ -11,7 +11,7 @@ export default function RequestApprovalBtn({ jobId }: Props) {
   const utils = api.useUtils();
   const createApproval = api.approval.create.useMutation({
     onSuccess: () => {
-      utils.approval.getApprovals.invalidate();
+      utils.approval.getAll.invalidate();
     },
   });
   return (
