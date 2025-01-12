@@ -7,7 +7,7 @@ import { deleteS3Object } from "@/server/util/s3";
 import { authorizedUsers } from "authorizedUsers";
 
 export const failedJobRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
+  getAll: protectedProcedure.query(({ ctx }) => {
     const userEmail = ctx.session?.user?.email ?? "";
     if (!userEmail) {
       throw new TRPCError({
@@ -16,7 +16,7 @@ export const failedJobRouter = createTRPCRouter({
       });
     }
     const userAccessibleJobs = authorizedUsers[userEmail]?.accessibleJobs ?? [];
-    const jobs = await ctx.db
+    return ctx.db
       .select({
         id: failedJobs.id,
         jobId: failedJobs.jobId,
@@ -27,7 +27,6 @@ export const failedJobRouter = createTRPCRouter({
       })
       .from(failedJobs)
       .where(inArray(failedJobs.jobName, userAccessibleJobs));
-    return jobs;
   }),
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
