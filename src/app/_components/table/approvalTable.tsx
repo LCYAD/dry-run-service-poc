@@ -1,11 +1,12 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import { useContext } from "react";
+import { NotificationContext } from "@/app/_context/notificationContext";
 import TableContainer from "./tableContainer";
 import TableHeader from "./tableHeader";
 import DeleteBtn from "./deleteBtn";
 import CustomBtn from "./customBtn";
-import type { Session } from "next-auth";
 
 type Props = {
   userRole: string;
@@ -13,11 +14,18 @@ type Props = {
 
 export default function ApprovalTable({ userRole }: Props) {
   const { data: approvals = [], isLoading } = api.approval.getAll.useQuery();
+  const { setNotification } = useContext(NotificationContext);
 
   const utils = api.useUtils();
+
   const deleteApproval = api.approval.delete.useMutation({
-    onSuccess: () => {
-      utils.approval.getAll.invalidate();
+    onSuccess: async () => {
+      await utils.approval.getAll.invalidate();
+      setNotification({
+        type: "success",
+        text: "Approval deleted successfully!",
+        isVisible: true,
+      });
     },
   });
 
@@ -26,10 +34,20 @@ export default function ApprovalTable({ userRole }: Props) {
   };
 
   const approvalUpdateStatus = api.approval.updateStatus.useMutation({
-    onSuccess: () => {
-      utils.failedJob.getAll.invalidate();
-      utils.approval.getAll.invalidate();
-      utils.auditLog.getAll.invalidate();
+    onSuccess: async (_, { status }) => {
+      await Promise.all([
+        utils.failedJob.getAll.invalidate(),
+        utils.approval.getAll.invalidate(),
+        utils.auditLog.getAll.invalidate(),
+      ]);
+      setNotification({
+        type: status === "approved" ? "success" : "error",
+        text:
+          status === "approved"
+            ? "Request approved successfully"
+            : "Request was rejected",
+        isVisible: true,
+      });
     },
   });
 
@@ -49,7 +67,7 @@ export default function ApprovalTable({ userRole }: Props) {
 
   return (
     <TableContainer title="Approvals">
-      <table className="table table-zebra w-[80%] border-2 border-gray-400">
+      <table className="table table-zebra w-full border-2 border-gray-400">
         <TableHeader headers={tableHeaders} />
         <tbody>
           {isLoading ? (

@@ -34,7 +34,8 @@ export const failedJobRouter = createTRPCRouter({
       const failedJob = await ctx.db
         .select()
         .from(failedJobs)
-        .where(eq(failedJobs.id, input.id));
+        .where(eq(failedJobs.id, input.id))
+        .limit(1);
       if (failedJob.length === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -44,7 +45,7 @@ export const failedJobRouter = createTRPCRouter({
       await ctx.db.delete(approvals).where(eq(approvals.jobId, input.id));
       await Promise.all([
         ctx.db.delete(failedJobs).where(eq(failedJobs.id, input.id)),
-        deleteS3Object(failedJob[0]?.s3Key as string),
+        deleteS3Object(failedJob[0]!.s3Key),
       ]);
     }),
 });

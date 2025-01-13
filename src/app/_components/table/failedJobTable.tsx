@@ -1,6 +1,8 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import { useContext } from "react";
+import { NotificationContext } from "@/app/_context/notificationContext";
 import DeleteBtn from "./deleteBtn";
 import TableContainer from "./tableContainer";
 import RequestApprovalBtn from "./customBtn";
@@ -8,12 +10,20 @@ import TableHeader from "./tableHeader";
 
 export default function FailedJobTable() {
   const { data: failedJobs = [], isLoading } = api.failedJob.getAll.useQuery();
+  const { setNotification } = useContext(NotificationContext);
 
   const utils = api.useUtils();
   const deleteFailJob = api.failedJob.delete.useMutation({
-    onSuccess: () => {
-      utils.failedJob.getAll.invalidate();
-      utils.approval.getAll.invalidate();
+    onSuccess: async () => {
+      await Promise.all([
+        utils.failedJob.getAll.invalidate(),
+        utils.approval.getAll.invalidate(),
+      ]);
+      setNotification({
+        type: "success",
+        text: "Failed Job deleted successfully!",
+        isVisible: true,
+      });
     },
   });
 
@@ -22,10 +32,23 @@ export default function FailedJobTable() {
   };
 
   const createApproval = api.approval.create.useMutation({
-    // TODO: handle error case
-    onSuccess: () => {
-      utils.approval.getAll.invalidate();
-      utils.auditLog.getAll.invalidate();
+    onSuccess: async () => {
+      await Promise.all([
+        utils.approval.getAll.invalidate(),
+        utils.auditLog.getAll.invalidate(),
+      ]);
+      setNotification({
+        type: "success",
+        text: "Approval was created successfully!",
+        isVisible: true,
+      });
+    },
+    onError: (err) => {
+      setNotification({
+        type: "error",
+        text: err.message,
+        isVisible: true,
+      });
     },
   });
 
@@ -34,17 +57,17 @@ export default function FailedJobTable() {
   };
 
   const tableHeaders = [
-    { name: "Job Name", widthPercentageStr: "20%" },
+    { name: "Job Name", widthPercentageStr: "17%" },
     { name: "Job ID", widthPercentageStr: "20%" },
-    { name: "Approved", widthPercentageStr: "10%" },
+    { name: "Approved", widthPercentageStr: "8%" },
     { name: "Created At", widthPercentageStr: "15%" },
     { name: "Last Updated", widthPercentageStr: "15%" },
-    { name: "Action", widthPercentageStr: "20%" },
+    { name: "Action", widthPercentageStr: "25%" },
   ];
 
   return (
     <TableContainer title="Failed Jobs">
-      <table className="table table-zebra w-[80%] border-2 border-gray-400">
+      <table className="table table-zebra w-full border-2 border-gray-400">
         <TableHeader headers={tableHeaders} />
         <tbody>
           {isLoading ? (
