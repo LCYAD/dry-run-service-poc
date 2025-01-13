@@ -7,6 +7,7 @@ import DeleteBtn from "./deleteBtn";
 import TableContainer from "./tableContainer";
 import RequestApprovalBtn from "./customBtn";
 import TableHeader from "./tableHeader";
+import UploadKeyInput from "../uploadKeyInput";
 
 export default function FailedJobTable() {
   const { data: failedJobs = [], isLoading } = api.failedJob.getAll.useQuery();
@@ -57,12 +58,12 @@ export default function FailedJobTable() {
   };
 
   const tableHeaders = [
-    { name: "Job Name", widthPercentageStr: "17%" },
-    { name: "Job ID", widthPercentageStr: "20%" },
+    { name: "Job Name", widthPercentageStr: "14%" },
+    { name: "Job ID", widthPercentageStr: "15%" },
     { name: "Approved", widthPercentageStr: "8%" },
-    { name: "Created At", widthPercentageStr: "15%" },
-    { name: "Last Updated", widthPercentageStr: "15%" },
-    { name: "Action", widthPercentageStr: "25%" },
+    { name: "Created At", widthPercentageStr: "14%" },
+    { name: "Last Updated", widthPercentageStr: "14%" },
+    { name: "Action", widthPercentageStr: "35%" },
   ];
 
   return (
@@ -91,11 +92,15 @@ export default function FailedJobTable() {
                 <td>
                   <div className="flex w-full">
                     <DeleteBtn clickHandler={deletFailJobHandler(job.id)} />
-                    <RequestApprovalBtn
-                      clickHandler={createApprovalHandler(job.id)}
-                      text="Request Approval"
-                      disabled={job.downloadApproved!}
-                    />
+                    {job.downloadApproved ? (
+                      <UploadKeyInput id={job.id} jobId={job.jobId} />
+                    ) : (
+                      <RequestApprovalBtn
+                        clickHandler={createApprovalHandler(job.id)}
+                        text="Request Approval"
+                        disabled={job.downloadApproved!}
+                      />
+                    )}
                   </div>
                 </td>
               </tr>
