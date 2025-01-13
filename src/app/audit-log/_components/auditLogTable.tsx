@@ -10,8 +10,8 @@ export default function AuditLogTable() {
 
   const utils = api.useUtils();
   const deleteAuditLog = api.auditLog.delete.useMutation({
-    onSuccess: () => {
-      utils.auditLog.getAll.invalidate();
+    onSuccess: async () => {
+      await utils.auditLog.getAll.invalidate();
     },
   });
 
@@ -30,7 +30,7 @@ export default function AuditLogTable() {
 
   return (
     <TableContainer title="Audit Logs">
-      <table className="table table-zebra w-[80%] border-2 border-gray-400">
+      <table className="table table-zebra w-full border-2 border-gray-400">
         <TableHeader headers={tableHeaders} />
         <tbody>
           {isLoading ? (

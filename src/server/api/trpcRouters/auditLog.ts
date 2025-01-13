@@ -32,7 +32,8 @@ export const auditLogRouter = createTRPCRouter({
       const logs = await ctx.db
         .select()
         .from(auditLogs)
-        .where(eq(auditLogs.id, input.id));
+        .where(eq(auditLogs.id, input.id))
+        .limit(1);
       if (logs.length === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",

@@ -15,7 +15,9 @@ export const approvalRouter = createTRPCRouter({
         message: "User email is not found in user session",
       });
     }
+
     const userRole = authorizedUsers[userEmail]?.role;
+
     return userRole === "developer"
       ? ctx.db
           .select({
@@ -52,14 +54,17 @@ export const approvalRouter = createTRPCRouter({
             eq(approvals.jobId, input.jobId),
             eq(approvals.status, "pending"),
           ),
-        );
+        )
+        .limit(1);
       if (approvalStillPending.length !== 0) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "there is another pending approval for this jobId",
+          message: "Cannot create approval: pending approval exist!",
         });
       }
+
       const userEmail = ctx.session.user.email!;
+
       await Promise.all([
         ctx.db.insert(approvals).values({
           jobId: input.jobId,
@@ -81,20 +86,24 @@ export const approvalRouter = createTRPCRouter({
       const results = await ctx.db
         .select()
         .from(approvals)
-        .where(eq(approvals.id, input.id));
+        .where(eq(approvals.id, input.id))
+        .limit(1);
       if (results.length === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "could not find failedJob by Id",
         });
       }
+
       const approval = results[0]!;
+
       if (approval.status !== "pending") {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "status could not be updated",
         });
       }
+
       const updateFailedJobTableOps =
         input.status === "approved"
           ? [
@@ -104,6 +113,7 @@ export const approvalRouter = createTRPCRouter({
                 .where(eq(failedJobs.id, approval.jobId)),
             ]
           : [];
+
       await Promise.all([
         ...updateFailedJobTableOps,
         ctx.db
@@ -126,13 +136,15 @@ export const approvalRouter = createTRPCRouter({
       const approval = await ctx.db
         .select()
         .from(approvals)
-        .where(eq(approvals.id, input.id));
+        .where(eq(approvals.id, input.id))
+        .limit(1);
       if (approval.length === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "could not find failedJob by Id",
         });
       }
+
       await ctx.db.delete(approvals).where(eq(approvals.id, input.id));
     }),
 });

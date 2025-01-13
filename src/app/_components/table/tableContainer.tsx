@@ -6,7 +6,7 @@ type Props = Readonly<{ children: React.ReactNode }> & {
 
 export default function TableContainer({ children, title }: Props) {
   return (
-    <div className="m-[10%] h-[40%] w-full">
+    <div className="mx-[10%] my-[5%] h-[40%] w-[80vw]">
       <p className="text-2xl font-semibold">{title}</p>
       <Divider />
       <div className="overflow-x-auto">{children}</div>
