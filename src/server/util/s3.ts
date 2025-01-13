@@ -17,23 +17,15 @@ const s3Client = new S3Client({
   forcePathStyle: env.NODE_ENV === "development", // true value Required for MinIO
 });
 
-const bucketName = "failed-job-data";
-
-export const encryptAndUploadJsonToS3 = async (
+export const uploadToS3 = async (
+  bucketName: string,
   key: string,
-  jsonData: Record<string, unknown>,
-  publicKey: string,
+  data: Buffer | string,
 ) => {
-  // Encrypt the data
-  const encryptedData = crypto.publicEncrypt(
-    publicKey,
-    Buffer.from(JSON.stringify(jsonData)),
-  );
-
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
-    Body: encryptedData,
+    Body: data,
     ContentType: "application/json",
   });
 
@@ -52,6 +44,7 @@ export const encryptAndUploadJsonToS3 = async (
 };
 
 export const downloadAndDecryptFromS3 = async (
+  bucketName: string,
   key: string,
   privateKey: string,
 ) => {
@@ -85,7 +78,7 @@ export const downloadAndDecryptFromS3 = async (
   }
 };
 
-export const deleteS3Object = async (key: string) => {
+export const deleteS3Object = async (bucketName: string, key: string) => {
   const command = new DeleteObjectCommand({
     Bucket: bucketName,
     Key: key,

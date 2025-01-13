@@ -45,7 +45,7 @@ export const failedJobRouter = createTRPCRouter({
       await ctx.db.delete(approvals).where(eq(approvals.jobId, input.id));
       await Promise.all([
         ctx.db.delete(failedJobs).where(eq(failedJobs.id, input.id)),
-        deleteS3Object(failedJob[0]!.s3Key),
+        deleteS3Object("failed-job-data", failedJob[0]!.s3Key),
       ]);
     }),
 });
