@@ -55,7 +55,7 @@ export const downloadAndDecryptFromS3 = async (
 
   try {
     const response = await s3Client.send(command);
-    const encryptedBuffer = await response?.Body?.transformToByteArray();
+    const encryptedBuffer = await response.Body?.transformToByteArray();
 
     if (!encryptedBuffer)
       return {
@@ -63,12 +63,19 @@ export const downloadAndDecryptFromS3 = async (
         error: "No data found",
       };
 
-    // Decrypt the data using private key
-    const decryptedData = crypto.privateDecrypt(privateKey, encryptedBuffer);
+    const decryptedData = crypto.privateDecrypt(
+      privateKey,
+      Buffer.from(encryptedBuffer),
+    );
+
+    const jsonData = JSON.parse(decryptedData.toString()) as Record<
+      string,
+      unknown
+    >;
 
     return {
       success: true,
-      data: JSON.parse(decryptedData.toString()) as Record<string, unknown>,
+      data: jsonData,
     };
   } catch (error) {
     return {
