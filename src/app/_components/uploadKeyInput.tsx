@@ -1,4 +1,7 @@
-import { type ChangeEvent, useContext, useState } from "react";
+"use client";
+
+import { type ChangeEvent, useContext, useEffect, useState } from "react";
+import { api } from "@/trpc/react";
 import CustomBtn from "./table/customBtn";
 import { NotificationContext } from "../_context/notificationContext";
 
@@ -10,6 +13,42 @@ type Props = {
 export default function UploadKeyInput({ id, jobId }: Props) {
   const [uploadedKey, setUploadedKey] = useState(false);
   const { setNotification } = useContext(NotificationContext);
+
+  useEffect(() => {
+    const keyContent = localStorage.getItem(`pkey-${jobId}`);
+    if (keyContent) {
+      setUploadedKey(true);
+    }
+  }, [jobId]);
+
+  const downloadFileMutation = api.failedJob.download.useMutation({
+    onSuccess: (result) => {
+      setNotification({
+        type: "success",
+        text: "File Download Successful!",
+        isVisible: true,
+      });
+      const blob = new Blob([JSON.stringify(result)], {
+        type: "application/json",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${jobId}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    onError: (error) => {
+      console.log(error);
+      setNotification({
+        type: "error",
+        text: `Failed to download: ${error.message}`,
+        isVisible: true,
+      });
+    },
+  });
 
   const handleFileUpload =
     (jobId: string) => (e: ChangeEvent<HTMLInputElement>) => {
@@ -35,8 +74,10 @@ export default function UploadKeyInput({ id, jobId }: Props) {
   const handleDownload = (id: number, jobId: string) => () => {
     const keyContent = localStorage.getItem(`pkey-${jobId}`);
     if (keyContent) {
-      // handle download action
-      console.log(keyContent);
+      downloadFileMutation.mutate({
+        id,
+        file: new TextEncoder().encode(keyContent),
+      });
     }
   };
 
