@@ -15,7 +15,7 @@ export default function FailedJobTable() {
 
   const utils = api.useUtils();
   const deleteFailJob = api.failedJob.delete.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       await Promise.all([
         utils.failedJob.getAll.invalidate(),
         utils.approval.getAll.invalidate(),
@@ -25,6 +25,7 @@ export default function FailedJobTable() {
         text: "Failed Job deleted successfully!",
         isVisible: true,
       });
+      localStorage.removeItem(`pkey-${result.jobId}`);
     },
   });
 
