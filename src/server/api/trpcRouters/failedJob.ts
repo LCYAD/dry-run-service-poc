@@ -5,6 +5,8 @@ import { approvals, failedJobs } from "@/server/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { deleteS3Object, downloadAndDecryptFromS3 } from "@/server/util/s3";
 import { authorizedUsers } from "authorizedUsers";
+import { nanoid } from "nanoid";
+import { getBullQueue } from "@/server/util/queue";
 
 export const failedJobRouter = createTRPCRouter({
   getAll: protectedProcedure.query(({ ctx }) => {
@@ -32,7 +34,7 @@ export const failedJobRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.number(),
-        file: z.instanceof(Uint8Array),
+        pKeyfile: z.instanceof(Uint8Array),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -52,7 +54,7 @@ export const failedJobRouter = createTRPCRouter({
       const result = await downloadAndDecryptFromS3(
         "failed-job-data",
         failedJob[0]!.s3Key,
-        new TextDecoder().decode(input.file),
+        new TextDecoder().decode(input.pKeyfile),
       );
 
       if (!result.success) {
@@ -63,6 +65,51 @@ export const failedJobRouter = createTRPCRouter({
       }
 
       return result.data;
+    }),
+  retry: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        pKeyfile: z.instanceof(Uint8Array),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const jobs = await ctx.db
+        .select()
+        .from(failedJobs)
+        .where(eq(failedJobs.id, input.id))
+        .limit(1);
+      if (jobs.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "could not find failedJob by Id",
+        });
+      }
+      const failedJob = jobs[0]!;
+      const result = await downloadAndDecryptFromS3(
+        "failed-job-data",
+        failedJob.s3Key,
+        new TextDecoder().decode(input.pKeyfile),
+      );
+
+      await ctx.db.delete(approvals).where(eq(approvals.jobId, input.id));
+      await Promise.all([
+        ctx.db.delete(failedJobs).where(eq(failedJobs.id, input.id)),
+        deleteS3Object("failed-job-data", failedJob.s3Key),
+      ]);
+      const queue = getBullQueue(failedJob.jobName);
+      if (!queue) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Cannot find the right queue to inser job!",
+        });
+      }
+      const { input: apiInput, expectedRes = {} } = result.data!;
+      const newJobId = `string-equal-${nanoid(10)}`;
+      await queue.add(newJobId, {
+        input: apiInput,
+        expectedRes,
+      });
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
@@ -83,5 +130,6 @@ export const failedJobRouter = createTRPCRouter({
         ctx.db.delete(failedJobs).where(eq(failedJobs.id, input.id)),
         deleteS3Object("failed-job-data", failedJob[0]!.s3Key),
       ]);
+      return failedJob[0]!;
     }),
 });

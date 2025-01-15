@@ -13,6 +13,7 @@ type Props = {
 export default function UploadKeyInput({ id, jobId }: Props) {
   const [uploadedKey, setUploadedKey] = useState(false);
   const { setNotification } = useContext(NotificationContext);
+  const utils = api.useUtils();
 
   useEffect(() => {
     const keyContent = localStorage.getItem(`pkey-${jobId}`);
@@ -41,10 +42,31 @@ export default function UploadKeyInput({ id, jobId }: Props) {
       window.URL.revokeObjectURL(url);
     },
     onError: (error) => {
-      console.log(error);
       setNotification({
         type: "error",
         text: `Failed to download: ${error.message}`,
+        isVisible: true,
+      });
+    },
+  });
+
+  const retryFailedJobMutation = api.failedJob.retry.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.failedJob.getAll.invalidate(),
+        utils.approval.getAll.invalidate(),
+      ]);
+      setNotification({
+        type: "success",
+        text: "Job was scheduled for retries",
+        isVisible: true,
+      });
+      localStorage.removeItem(`pkey-${jobId}`);
+    },
+    onError: (error) => {
+      setNotification({
+        type: "error",
+        text: `Failed to retry job: ${error.message}`,
         isVisible: true,
       });
     },
@@ -76,7 +98,7 @@ export default function UploadKeyInput({ id, jobId }: Props) {
     if (keyContent) {
       downloadFileMutation.mutate({
         id,
-        file: new TextEncoder().encode(keyContent),
+        pKeyfile: new TextEncoder().encode(keyContent),
       });
     }
   };
@@ -84,8 +106,10 @@ export default function UploadKeyInput({ id, jobId }: Props) {
   const handleRetry = (id: number, jobId: string) => () => {
     const keyContent = localStorage.getItem(`pkey-${jobId}`);
     if (keyContent) {
-      // handle download action
-      console.log(keyContent);
+      retryFailedJobMutation.mutate({
+        id,
+        pKeyfile: new TextEncoder().encode(keyContent),
+      });
     }
   };
 

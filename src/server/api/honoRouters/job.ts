@@ -1,8 +1,11 @@
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { testStringEqualQueue } from "@/server/bullmq/testStringEqual";
+
 import { nanoid } from "nanoid";
+import { getBullQueue } from "@/server/util/queue";
+import { QUEUE_NAMES } from "@/server/bullmq/constant";
 
 export const jobRouter = new Hono().basePath("/api/job");
 
@@ -15,7 +18,13 @@ jobRouter.post(
   zValidator("json", jobTestStringPostInputSchema),
   async (c) => {
     const body = c.req.valid("json");
-    await testStringEqualQueue.add(`string-equal-${nanoid(10)}`, body);
+    const queue = getBullQueue(QUEUE_NAMES.TEST_STRING_EQUAL);
+    if (!queue) {
+      throw new HTTPException(500, {
+        message: "Cannot find the right queue to inser job!",
+      });
+    }
+    await queue.add(`string-equal-${nanoid(10)}`, body);
     return c.json(
       {
         message: "Job Created!",
