@@ -13,27 +13,50 @@ const jobTestStringPostInputSchema = z.object({
   expectedRes: z.string(),
 });
 
-jobRouter.post(
-  "/test-string-equal",
-  zValidator("json", jobTestStringPostInputSchema),
-  async (c) => {
-    const body = c.req.valid("json");
-    const queue = getBullQueue(QUEUE_NAMES.TEST_STRING_EQUAL);
-    if (!queue) {
-      throw new HTTPException(500, {
-        message: "Cannot find the right queue to inser job!",
-      });
-    }
-    await queue.add(`string-equal-${nanoid(10)}`, body);
-    return c.json(
-      {
-        message: "Job Created!",
-      },
-      201,
-    );
-  },
-);
+const jobTestJsonPostInputSchema = z.object({
+  input: z.object({ val: z.number() }),
+  expectedRes: z.object({ result: z.number() }),
+});
+
+jobRouter
+  .post(
+    "/test-string-equal",
+    zValidator("json", jobTestStringPostInputSchema),
+    async (c) => {
+      const body = c.req.valid("json");
+      const queue = getBullQueue(QUEUE_NAMES.TEST_STRING_EQUAL);
+      if (!queue) {
+        throw new HTTPException(500, {
+          message: "Cannot find the right queue to insert job!",
+        });
+      }
+      await queue.add(`string-equal-${nanoid(10)}`, body);
+      return c.json(
+        {
+          message: "Job Created!",
+        },
+        201,
+      );
+    },
+  )
+  .post(
+    "/test-json-equal",
+    zValidator("json", jobTestJsonPostInputSchema),
+    async (c) => {
+      const body = c.req.valid("json");
+      // TODO: create queue and worker
+      console.log(body);
+      return c.json(
+        {
+          message: "Job Created!",
+        },
+        201,
+      );
+    },
+  );
 
 export type StringEqualQueueInput = z.infer<
   typeof jobTestStringPostInputSchema
 >;
+
+export type JsonEqualQueueInput = z.infer<typeof jobTestJsonPostInputSchema>;
