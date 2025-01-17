@@ -44,8 +44,13 @@ jobRouter
     zValidator("json", jobTestJsonPostInputSchema),
     async (c) => {
       const body = c.req.valid("json");
-      // TODO: create queue and worker
-      console.log(body);
+      const queue = getBullQueue(QUEUE_NAMES.TEST_JSON_EQUAL);
+      if (!queue) {
+        throw new HTTPException(500, {
+          message: "Cannot find the right queue to insert job!",
+        });
+      }
+      await queue.add(`json-equal-${nanoid(10)}`, body);
       return c.json(
         {
           message: "Job Created!",
