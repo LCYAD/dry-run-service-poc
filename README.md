@@ -45,6 +45,41 @@
 
 The solution is to create a service where the old implementation can enqueue a job when its old implemenation is triggered, then this service will help trigger the new service and help compare the results and also perform its error handling
 
-More design detail can be found here
+## Things to note before using the repo
+
+- the build will succeed but it will fail to run. Haven't looked into it yet
+- test coverage is bad ... and probably only will ever reach 40-50% due to time constraint
+- there are still things that are yet to be implemented like parent + child job (one job that is split up to many smaller jobs)
 
 ## Setup
+
+### Prerequisite
+
+- create a [Google OAuth 2.0 Credential](https://console.cloud.google.com/apis/credentials) for your projects. See this article https://developers.google.com/identity/protocols/oauth2 for more detail.
+  - this will be used in the `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in the `.env` file later
+
+### File needed to be created
+
+#### `.env`
+
+- use the `.env.example` and follow some instruction to generate auth secret
+
+#### `authorizedUsers.ts`
+
+- use the `authorizedUsersSample.ts` to setup the users that can access your account. Currently, only Google accounts are supported
+  - use the role to determine what the user can see and perform on the frontend. Options: `developer`, `approver` and `admin`
+
+### Start up server
+
+- use either `npm`, `yarn` or `pnpm` to install dependencies. We will be using pnpm below
+- to run the server on your local
+
+```
+pnpm dev
+```
+
+- to run the test
+
+```
+pnpm test
+```
