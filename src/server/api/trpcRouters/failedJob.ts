@@ -11,6 +11,7 @@ import { getBullQueue } from "@/server/util/queue";
 export const failedJobRouter = createTRPCRouter({
   getAll: protectedProcedure.query(({ ctx }) => {
     const userEmail = ctx.session?.user?.email ?? "";
+    const userRole = ctx.session?.user?.role ?? "";
     if (!userEmail) {
       throw new TRPCError({
         code: "NOT_FOUND",
@@ -18,17 +19,28 @@ export const failedJobRouter = createTRPCRouter({
       });
     }
     const userAccessibleJobs = authorizedUsers[userEmail]?.accessibleJobs ?? [];
-    return ctx.db
-      .select({
-        id: failedJobs.id,
-        jobId: failedJobs.jobId,
-        jobName: failedJobs.jobName,
-        downloadApproved: failedJobs.downloadApproved,
-        createdAt: failedJobs.createdAt,
-        updatedAt: failedJobs.updatedAt,
-      })
-      .from(failedJobs)
-      .where(inArray(failedJobs.jobName, userAccessibleJobs));
+    return userRole === "developer"
+      ? ctx.db
+          .select({
+            id: failedJobs.id,
+            jobId: failedJobs.jobId,
+            jobName: failedJobs.jobName,
+            downloadApproved: failedJobs.downloadApproved,
+            createdAt: failedJobs.createdAt,
+            updatedAt: failedJobs.updatedAt,
+          })
+          .from(failedJobs)
+          .where(inArray(failedJobs.jobName, userAccessibleJobs))
+      : ctx.db
+          .select({
+            id: failedJobs.id,
+            jobId: failedJobs.jobId,
+            jobName: failedJobs.jobName,
+            downloadApproved: failedJobs.downloadApproved,
+            createdAt: failedJobs.createdAt,
+            updatedAt: failedJobs.updatedAt,
+          })
+          .from(failedJobs);
   }),
   download: protectedProcedure
     .input(
